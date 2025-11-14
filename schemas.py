@@ -1,48 +1,35 @@
 """
-Database Schemas
+Database Schemas for 1:1 Chat App
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model represents a collection in MongoDB. The collection name is the
+lowercased class name (handled by the Flames platform conventions).
 """
-
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 
-# Example schemas (replace with your own):
-
-class User(BaseModel):
+class ChatUser(BaseModel):
     """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
+    Users in the chat app
+    Collection: "chatuser"
     """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    username: str = Field(..., min_length=2, max_length=24, description="Public username")
+    avatar_color: str = Field("#6366F1", description="Hex color for avatar background")
 
-class Product(BaseModel):
+class Conversation(BaseModel):
     """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
+    A 1:1 conversation between two users
+    Collection: "conversation"
     """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    participant_ids: List[str] = Field(..., min_items=2, max_items=2, description="Two user IDs")
+    last_message_preview: Optional[str] = Field(None, description="Preview of last message")
 
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Message(BaseModel):
+    """
+    Message within a conversation
+    Collection: "message"
+    """
+    conversation_id: str = Field(..., description="Conversation ID")
+    sender_id: str = Field(..., description="Sender user ID")
+    text: str = Field(..., min_length=1, max_length=4000, description="Message text")
+    delivered: bool = Field(False, description="Delivered flag")
+    read: bool = Field(False, description="Read flag")
